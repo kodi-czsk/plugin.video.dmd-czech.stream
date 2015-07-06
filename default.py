@@ -110,10 +110,14 @@ def OBSAH():
 def LIST_SHOWS(url):
     data = getJsonDataFromUrl(url)
     for item in data[u'_embedded'][u'stream:show']:
-            link = __baseurl__+item[u'_links'][u'self'][u'href']
-            image = makeImageUrl(item[u'image'])
-            name = item[u'name']
-            addDir(name,link,2,image)
+        link = __baseurl__+item[u'_links'][u'self'][u'href']
+        image = makeImageUrl(item[u'image'])
+        name = item[u'name']
+        addDir(name,link,2,image)
+
+    if 'next' in data[u'_links'].keys():
+        LIST_SHOWS(__baseurl__ + data[u'_links'][u'next'][u'href'])
+
 
 def LIST_SEASON(url):
     data = getJsonDataFromUrl(url)

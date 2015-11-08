@@ -3,6 +3,8 @@
 	<string id="30000">Kvalita videa</string>
 	<string id="30001">Spýtať sa</string>
 	<string id="30002">Kvalita %s nedostupná - prehráva sa %s</string>
+	<string id="30003">Video nie je dostupné</string>
+	<string id="30004">Ďalšie epizódy programu</string>
 	<string id="30240">240p</string>
 	<string id="30360">360p</string>
 	<string id="30480">480p</string>

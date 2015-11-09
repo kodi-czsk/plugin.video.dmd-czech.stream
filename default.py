@@ -133,6 +133,7 @@ def LIST_SHOWS(url):
 
     if 'next' in data[u'_links'].keys():
         LIST_SHOWS(__baseurl__ + data[u'_links'][u'next'][u'href'])
+    xbmcplugin.addSortMethod( handle=addonhandle, sortMethod=xbmcplugin.SORT_METHOD_LABEL)
 
 def LIST_SEASON(url):
     data = getJsonDataFromUrl(url)

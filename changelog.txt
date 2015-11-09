@@ -1,5 +1,6 @@
 2015-11-08 [1.2.3]
   * Pridana moznost vyberu kvality videa
+  * Pridana moznost triedenia relacii a rozpravok podla nazvu cez "sidebar menu"
 2015-07-06 [1.2.2]
   * Oprava listování všech pořadů
 2015-02-15 [1.2.1]

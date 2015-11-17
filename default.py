@@ -138,63 +138,59 @@ def listShows(url):
         listShows(__baseurl__ + data[u'_links'][u'next'][u'href'])
     xbmcplugin.addSortMethod( handle=addonHandle, sortMethod=xbmcplugin.SORT_METHOD_LABEL)
 
-def listSeason(url):
+def listSeasons(url):
     data = getJsonDataFromUrl(url)
     seasons = data[u'_embedded'][u'stream:season']
     if type(seasons) is dict:
-        for item in seasons[u'_embedded'][u'stream:episode']:
-            link = __baseurl__+item[u'_links'][u'self'][u'href']
-            image = makeImageUrl(item[u'image'])
-            name = item[u'name']
-            listEpisode(name,link,image)
+        listSeasonEpisodes(seasons)
     elif type(seasons) is list:
         for season in seasons:
-            try:
-                episodes=season[u'_embedded'][u'stream:episode']
-                if type(episodes) is dict:
-                    link = __baseurl__+episodes[u'_links'][u'self'][u'href']
-                    image = makeImageUrl(episodes[u'image'])
-                    name = season[u'name'] +' | '+ episodes[u'name']
-                    listEpisode(name,link,image)
-                elif type(episodes) is list:
-                    for episode in episodes:
-                        link = __baseurl__+episode[u'_links'][u'self'][u'href']
-                        image = makeImageUrl(episode[u'image'])
-                        name = season[u'name'] +' | '+ episode[u'name']
-                        listEpisode(name,link,image)
-            except:
-                continue
-    try:
+            link = __baseurl__+season[u'_links'][u'self'][u'href']
+            name = u'[B][COLOR blue]' + season[u'name'] + u' >>[/COLOR][/B]'
+            addDir(name,link,MODE_LIST_EPISODES,nexticon)
+        for season in seasons:
+            listSeasonEpisodes(season, season[u'name'])
+    if (u'_links' in data) and (u'next' in data[u'_links']):
         link = __baseurl__+data[u'_links'][u'next'][u'href']
         addDir(u'[B][COLOR blue]'+getLS(30004)+u' >>[/COLOR][/B]',link,MODE_LIST_SEASON,nexticon)
-    except:
-        logDbg('Další epizody nenalezeny')
 
-def listEpisodes(url):
-    data = getJsonDataFromUrl(url)
-    islatest='/timeline/latest' in url
-    for item in data[u'_embedded'][u'stream:episode']:
-        link = __baseurl__+item[u'_links'][u'self'][u'href']
-        image = makeImageUrl(item[u'image'])
-        name = item[u'_embedded'][u'stream:show'][u'name'] + ' | ' + item[u'name']
-        listEpisode(name,link,image,islatest)
-    try:
-        link = __baseurl__+data[u'_links'][u'next'][u'href']
-        addDir(u'[B][COLOR blue]'+getLS(30004)+u' >>[/COLOR][/B]',link,MODE_LIST_EPISODES,nexticon)
-    except:
-        logDbg('Další epizody nenalezeny')
-
-def listEpisode(name, link, image, islatest=False):
+def addEpisode(item, season_name='', islatest=False):
+    link = __baseurl__+item[u'_links'][u'self'][u'href']
+    image = makeImageUrl(item[u'image'])
+    name = item[u'name']
+    if u'order' in item:
+        name = str(item[u'order']) +'. '+ name
+    if (len(season_name)==0) and ((u'_embedded' in item) and (u'stream:show' in item[u'_embedded'])) :
+        season_name = item[u'_embedded'][u'stream:show'][u'name']
+    if len(season_name):
+        name = season_name + ' | ' + name
     if quality_index == 0:
         addDir(name,link,MODE_VIDEOLINK,image)
     else:
         addUnresolvedLink(name,link,image,islatest)
 
+def listSeasonEpisodes(data, season_name='', islatest=False):
+    if (u'_embedded' in data) and (u'stream:episode' in data[u'_embedded']):
+        episodes=data[u'_embedded'][u'stream:episode']
+        if type(episodes) is dict:
+            addEpisode(episodes, season_name, islatest)
+        elif type(episodes) is list:
+            for item in episodes:
+                addEpisode(item, season_name, islatest)
+    if (u'_links' in data) and (u'next' in data[u'_links']):
+        link = __baseurl__+data[u'_links'][u'next'][u'href']
+        addDir(u'[B][COLOR blue]'+getLS(30004)+u' >>[/COLOR][/B]',link,MODE_LIST_EPISODES,nexticon)
+
+def listEpisodes(url):
+    data = getJsonDataFromUrl(url)
+    islatest='/timeline/latest' in url
+    listSeasonEpisodes(data, '', islatest)
+    
 def listNextEpisodes(url):
     data = getJsonDataFromUrl(url)
     try:
         link = __baseurl__+data[u'_embedded'][u'stream:show'][u'_links'][u'self'][u'href']
-        listSeason(link)
+        listSeasons(link)
     except:
         logDbg('Další epizody nenalezeny')
 
@@ -356,7 +352,7 @@ elif mode==MODE_LIST_SHOWS:
 
 elif mode==MODE_LIST_SEASON:
         STATS("LIST_SEASON", "Function")
-        listSeason(url)
+        listSeasons(url)
 
 elif mode==MODE_LIST_EPISODES:
         STATS("LIST_EPISODES", "Function")
@@ -375,4 +371,4 @@ elif mode==MODE_LIST_NEXT_EPISODES:
         STATS("LIST_NEXT_EPISODES", "Function")
         listNextEpisodes(url)
         
-xbmcplugin.endOfDirectory(int(sys.argv[1]))
+xbmcplugin.endOfDirectory(addonHandle)

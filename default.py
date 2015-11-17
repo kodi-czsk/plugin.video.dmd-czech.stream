@@ -150,11 +150,18 @@ def listSeason(url):
     elif type(seasons) is list:
         for season in seasons:
             try:
-                for episode in season[u'_embedded'][u'stream:episode']:
-                    link = __baseurl__+episode[u'_links'][u'self'][u'href']
-                    image = makeImageUrl(episode[u'image'])
-                    name = season[u'name'] +' | '+ episode[u'name']
+                episodes=season[u'_embedded'][u'stream:episode']
+                if type(episodes) is dict:
+                    link = __baseurl__+episodes[u'_links'][u'self'][u'href']
+                    image = makeImageUrl(episodes[u'image'])
+                    name = season[u'name'] +' | '+ episodes[u'name']
                     listEpisode(name,link,image)
+                elif type(episodes) is list:
+                    for episode in episodes:
+                        link = __baseurl__+episode[u'_links'][u'self'][u'href']
+                        image = makeImageUrl(episode[u'image'])
+                        name = season[u'name'] +' | '+ episode[u'name']
+                        listEpisode(name,link,image)
             except:
                 continue
     try:

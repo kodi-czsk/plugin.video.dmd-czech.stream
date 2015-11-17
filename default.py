@@ -126,7 +126,10 @@ def listContent():
 def listShows(url):
     data = getJsonDataFromUrl(url)
     for item in data[u'_embedded'][u'stream:show']:
-        link = __baseurl__+item[u'_links'][u'self'][u'href']
+        if u'stream:backward' in item[u'_links']:
+            link = __baseurl__+item[u'_links'][u'stream:backward'][u'href']
+        else:
+            link = __baseurl__+item[u'_links'][u'self'][u'href']
         image = makeImageUrl(item[u'image'])
         name = item[u'name']
         addDir(name,link,MODE_LIST_SEASON,image)

@@ -1,3 +1,9 @@
+2015-11-20 [1.2.4]
+  * Doplnena moznost vyberu inej kvality videa z kontextoveho menu.
+  * Pridane zobrazovanie poradoveho cisla epizody pri prehliadani relacie.
+  * Pridane odkazy na jednotlive sezony pri prehliadani epizod relacie.  
+  * Opravene nezobrazovanie epizody relacie, pokial bola jedina v sezone.
+  * Opravene vylistovanie epizod v relaciach vzdy od najnovsich po najstarsie (nespoliehat sa na poradie prijate zo streamu).    
 2015-11-08 [1.2.3]
   * Pridana moznost vyberu kvality videa
   * Pridana moznost triedenia relacii a rozpravok podla nazvu cez "sidebar menu"

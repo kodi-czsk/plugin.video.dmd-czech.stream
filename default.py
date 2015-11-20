@@ -301,11 +301,14 @@ def addItem(name,url,mode,iconimage,isfolder,islatest=False):
     liz.setProperty( "Fanart_Image", fanart )
     if not isfolder:
         liz.setProperty("IsPlayable", "true")
+        menuitems = []
         if islatest:
             next_url = composePluginUrl(url,MODE_LIST_NEXT_EPISODES,name)
-            menuitems = []
             menuitems.append(( getLS(30004).encode('utf-8'), 'XBMC.Container.Update('+next_url+')' ))
-            liz.addContextMenuItems(menuitems)
+        if quality_index != 0:
+            select_quality_url = composePluginUrl(url,MODE_VIDEOLINK,name)
+            menuitems.append(( getLS(30005).encode('utf-8'), 'XBMC.Container.Update('+select_quality_url+')' ))
+        liz.addContextMenuItems(menuitems)
     ok=xbmcplugin.addDirectoryItem(handle=addonHandle,url=u,listitem=liz,isFolder=isfolder)
     return ok
 

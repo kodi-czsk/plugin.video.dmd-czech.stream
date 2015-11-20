@@ -256,7 +256,7 @@ def resolveVideoLink(url,name):
 
     logDbg("Resolved URL: "+stream_url)
     if match_quality[0][0] != quality_settings[quality_index]:
-            notify(getLS(30002) % (quality_settings[quality_index], match_quality[0][0]))
+        notify(getLS(30002) % (quality_settings[quality_index], match_quality[0][0]))
     
     liz = xbmcgui.ListItem(path=stream_url, iconImage="DefaultVideo.png")
     liz.setInfo( type="Video", infoLabels={ "Title": name, "Plot": popis} )
@@ -265,58 +265,58 @@ def resolveVideoLink(url,name):
     xbmcplugin.setResolvedUrl(handle=addonHandle, succeeded=True, listitem=liz)
 
 def getParams():
-        param=[]
-        paramstring=sys.argv[2]
-        if len(paramstring)>=2:
-                params=sys.argv[2]
-                cleanedparams=params.replace('?','')
-                if (params[len(params)-1]=='/'):
-                        params=params[0:len(params)-2]
-                pairsofparams=cleanedparams.split('&')
-                param={}
-                for i in range(len(pairsofparams)):
-                        splitparams={}
-                        splitparams=pairsofparams[i].split('=')
-                        if (len(splitparams))==2:
-                                param[splitparams[0]]=splitparams[1]
-        return param
+    param=[]
+    paramstring=sys.argv[2]
+    if len(paramstring)>=2:
+        params=sys.argv[2]
+        cleanedparams=params.replace('?','')
+        if (params[len(params)-1]=='/'):
+            params=params[0:len(params)-2]
+        pairsofparams=cleanedparams.split('&')
+        param={}
+        for i in range(len(pairsofparams)):
+            splitparams={}
+            splitparams=pairsofparams[i].split('=')
+            if (len(splitparams))==2:
+                param[splitparams[0]]=splitparams[1]
+    return param
 
 def addLink(name,url,iconimage,popis):
-        logDbg("addLink(): '"+name+"' url='"+url+ "' img='"+iconimage+"' popis='"+popis+"'")
-        ok=True
-        liz=xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
-        liz.setInfo( type="Video", infoLabels={ "Title": name, "Plot": popis} )
-        liz.setProperty( "Fanart_Image", fanart )
-        ok=xbmcplugin.addDirectoryItem(handle=addonHandle,url=url,listitem=liz)
-        return ok
+    logDbg("addLink(): '"+name+"' url='"+url+ "' img='"+iconimage+"' popis='"+popis+"'")
+    ok=True
+    liz=xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
+    liz.setInfo( type="Video", infoLabels={ "Title": name, "Plot": popis} )
+    liz.setProperty( "Fanart_Image", fanart )
+    ok=xbmcplugin.addDirectoryItem(handle=addonHandle,url=url,listitem=liz)
+    return ok
 
 def composePluginUrl(url, mode, name):
     return sys.argv[0]+"?url="+urllib.quote_plus(url.encode('utf-8'))+"&mode="+str(mode)+"&name="+urllib.quote_plus(name.encode('utf-8'))
 
 def addItem(name,url,mode,iconimage,isfolder,islatest=False):
-        u=composePluginUrl(url,mode,name)
-        ok=True
-        liz=xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=iconimage)
-        liz.setInfo( type="Video", infoLabels={ "Title": name } )
-        liz.setProperty( "Fanart_Image", fanart )
-        if not isfolder:
-                liz.setProperty("IsPlayable", "true")
-                if islatest:
-                    next_url = composePluginUrl(url,MODE_LIST_NEXT_EPISODES,name)
-                    menuitems = []
-                    menuitems.append(( getLS(30004).encode('utf-8'), 'XBMC.Container.Update('+next_url+')' ))
-                    liz.addContextMenuItems(menuitems)
-        ok=xbmcplugin.addDirectoryItem(handle=addonHandle,url=u,listitem=liz,isFolder=isfolder)
-        return ok
+    u=composePluginUrl(url,mode,name)
+    ok=True
+    liz=xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=iconimage)
+    liz.setInfo( type="Video", infoLabels={ "Title": name } )
+    liz.setProperty( "Fanart_Image", fanart )
+    if not isfolder:
+        liz.setProperty("IsPlayable", "true")
+        if islatest:
+            next_url = composePluginUrl(url,MODE_LIST_NEXT_EPISODES,name)
+            menuitems = []
+            menuitems.append(( getLS(30004).encode('utf-8'), 'XBMC.Container.Update('+next_url+')' ))
+            liz.addContextMenuItems(menuitems)
+    ok=xbmcplugin.addDirectoryItem(handle=addonHandle,url=u,listitem=liz,isFolder=isfolder)
+    return ok
 
 def addDir(name,url,mode,iconimage):
-        logDbg("addDir(): '"+name+"' url='"+url+"' icon='"+iconimage+"' mode='"+str(mode)+"'")
-        return addItem(name,url,mode,iconimage,True)
+    logDbg("addDir(): '"+name+"' url='"+url+"' icon='"+iconimage+"' mode='"+str(mode)+"'")
+    return addItem(name,url,mode,iconimage,True)
 
 def addUnresolvedLink(name,url,iconimage,islatest=False):
-        mode=MODE_RESOLVE_VIDEOLINK
-        logDbg("addUnresolvedLink(): '"+name+"' url='"+url+"' icon='"+iconimage+"' mode='"+str(mode)+"'")
-        return addItem(name,url,mode,iconimage,False,islatest)
+    mode=MODE_RESOLVE_VIDEOLINK
+    logDbg("addUnresolvedLink(): '"+name+"' url='"+url+"' icon='"+iconimage+"' mode='"+str(mode)+"'")
+    return addItem(name,url,mode,iconimage,False,islatest)
 
 addonHandle=int(sys.argv[1])
 params=getParams()
@@ -326,49 +326,49 @@ thumb=None
 mode=None
 
 try:
-        url=urllib.unquote_plus(params["url"])
+    url=urllib.unquote_plus(params["url"])
 except:
-        pass
+    pass
 try:
-        name=urllib.unquote_plus(params["name"])
+    name=urllib.unquote_plus(params["name"])
 except:
-        pass
+    pass
 try:
-        mode=int(params["mode"])
+    mode=int(params["mode"])
 except:
-        pass
+    pass
 
 logDbg("Mode: "+str(mode))
 logDbg("URL: "+str(url))
 logDbg("Name: "+str(name))
 
 if mode==None or url==None or len(url)<1:
-        STATS("OBSAH", "Function")
-        listContent()
-       
+    STATS("OBSAH", "Function")
+    listContent()
+   
 elif mode==MODE_LIST_SHOWS:
-        STATS("LIST_SHOWS", "Function")
-        listShows(url)
+    STATS("LIST_SHOWS", "Function")
+    listShows(url)
 
 elif mode==MODE_LIST_SEASON:
-        STATS("LIST_SEASON", "Function")
-        listSeasons(url)
+    STATS("LIST_SEASON", "Function")
+    listSeasons(url)
 
 elif mode==MODE_LIST_EPISODES:
-        STATS("LIST_EPISODES", "Function")
-        listEpisodes(url)
+    STATS("LIST_EPISODES", "Function")
+    listEpisodes(url)
 
 elif mode==MODE_VIDEOLINK:
-        STATS(name, "Item")
-        videoLink(url,name)
+    STATS(name, "Item")
+    videoLink(url,name)
 
 elif mode==MODE_RESOLVE_VIDEOLINK:
-        resolveVideoLink(url,name)
-        STATS(name, "Item")
-        sys.exit(0)
+    resolveVideoLink(url,name)
+    STATS(name, "Item")
+    sys.exit(0)
 
 elif mode==MODE_LIST_NEXT_EPISODES:
-        STATS("LIST_NEXT_EPISODES", "Function")
-        listNextEpisodes(url)
-        
+    STATS("LIST_NEXT_EPISODES", "Function")
+    listNextEpisodes(url)
+    
 xbmcplugin.endOfDirectory(addonHandle)

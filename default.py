@@ -87,6 +87,18 @@ WORD_DIC = {
 '\\xc5\\x87': 'Ň',
 }
 
+REPL_DICT = {
+"&nbsp;": " ",
+"&amp;" : "&",
+"&quot;": "\"",
+"&lt;"  : "<",
+"&gt;"  : ">",
+"\n"    : "",
+"\r"    : "",
+"</b>"  : "[/B]",
+"</div>": "[CR]",
+}
+
 def getLS(strid):
     return addon.getLocalizedString(strid)
 
@@ -117,6 +129,18 @@ def getJsonDataFromUrl(url):
     response.close()
     httpdata = replaceWords(httpdata, WORD_DIC)
     return json.loads(httpdata)
+
+def html2text(html):
+    rex = re.compile('|'.join(map(re.escape, REPL_DICT)))
+    def doReplace(matchobj):
+        return REPL_DICT[matchobj.group(0)]
+    text = rex.sub(doReplace, html)
+    text = re.sub("<b( .*?)*>", "[B]", text)
+    text = re.sub("<br( .*?)*>", "[CR]", text)
+    text = re.sub("<p( .*?)*>", "[CR]", text)
+    text = re.sub("<div( .*?)*>", "[CR]", text)
+    text = re.sub("<.*?>", "", text)
+    return text
 
 def listContent():
     addDir(u'Nejnovější videa',__baseurl__ + '/timeline/latest',MODE_LIST_EPISODES,icon)
@@ -198,7 +222,7 @@ def videoLink(url,name):
     data = getJsonDataFromUrl(url)
     name = data[u'name']
     thumb = makeImageUrl(data[u'image'])
-    popis = data[u'detail']
+    popis = html2text(data[u'detail'])
     logDbg(url)
     for item in data[u'video_qualities']:
         try:
@@ -221,7 +245,7 @@ def resolveVideoLink(url,name):
     data = getJsonDataFromUrl(url)
     name = data[u'name']
     thumb = makeImageUrl(data[u'image'])
-    popis = data[u'detail']
+    popis = html2text(data[u'detail'])
     qa = []
     logDbg("Resolving video URL for quality " + quality_settings[quality_index] + " from: " + url)
     for item in data[u'video_qualities']:

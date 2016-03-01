@@ -27,13 +27,13 @@ MODE_VIDEOLINK = 10
 MODE_RESOLVE_VIDEOLINK = 11
 MODE_LIST_NEXT_EPISODES = 12
 
-def replace_words(text, word_dic):
+def replaceWords(text, word_dic):
     rc = re.compile('|'.join(map(re.escape, word_dic)))
     def translate(match):
         return word_dic[match.group(0)]
     return rc.sub(translate, text)
 
-word_dic = {
+WORD_DIC = {
 '\u00e1': 'á',
 '\u00e9': 'é',
 '\u00ed': 'í',
@@ -87,6 +87,18 @@ word_dic = {
 '\\xc5\\x87': 'Ň',
 }
 
+REPL_DICT = {
+"&nbsp;": " ",
+"&amp;" : "&",
+"&quot;": "\"",
+"&lt;"  : "<",
+"&gt;"  : ">",
+"\n"    : "",
+"\r"    : "",
+"</b>"  : "[/B]",
+"</div>": "[CR]",
+}
+
 def getLS(strid):
     return addon.getLocalizedString(strid)
 
@@ -115,84 +127,102 @@ def getJsonDataFromUrl(url):
     response = urllib2.urlopen(req)
     httpdata = response.read()
     response.close()
-    httpdata = replace_words(httpdata, word_dic)
+    httpdata = replaceWords(httpdata, WORD_DIC)
     return json.loads(httpdata)
 
-def OBSAH():
+def html2text(html):
+    rex = re.compile('|'.join(map(re.escape, REPL_DICT)))
+    def doReplace(matchobj):
+        return REPL_DICT[matchobj.group(0)]
+    text = rex.sub(doReplace, html)
+    text = re.sub("<b( .*?)*>", "[B]", text)
+    text = re.sub("<br( .*?)*>", "[CR]", text)
+    text = re.sub("<p( .*?)*>", "[CR]", text)
+    text = re.sub("<div( .*?)*>", "[CR]", text)
+    text = re.sub("<.*?>", "", text)
+    return text
+
+def listContent():
     addDir(u'Nejnovější videa',__baseurl__ + '/timeline/latest',MODE_LIST_EPISODES,icon)
     addDir(u'Všechny pořady',__baseurl__ + '/catalogue',MODE_LIST_SHOWS,icon)
     addDir(u'Pohádky',__baseurl__ + '/catalogue?channels=3',MODE_LIST_SHOWS,icon)
 
-def LIST_SHOWS(url):
+def listShows(url):
     data = getJsonDataFromUrl(url)
     for item in data[u'_embedded'][u'stream:show']:
-        link = __baseurl__+item[u'_links'][u'self'][u'href']
+        if u'stream:backward' in item[u'_links']:
+            link = __baseurl__+item[u'_links'][u'stream:backward'][u'href']
+        else:
+            link = __baseurl__+item[u'_links'][u'self'][u'href']
         image = makeImageUrl(item[u'image'])
         name = item[u'name']
         addDir(name,link,MODE_LIST_SEASON,image)
 
     if 'next' in data[u'_links'].keys():
-        LIST_SHOWS(__baseurl__ + data[u'_links'][u'next'][u'href'])
-    xbmcplugin.addSortMethod( handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_LABEL)
+        listShows(__baseurl__ + data[u'_links'][u'next'][u'href'])
+    xbmcplugin.addSortMethod( handle=addonHandle, sortMethod=xbmcplugin.SORT_METHOD_LABEL)
 
-def LIST_SEASON(url):
+def listSeasons(url):
     data = getJsonDataFromUrl(url)
     seasons = data[u'_embedded'][u'stream:season']
     if type(seasons) is dict:
-        for item in seasons[u'_embedded'][u'stream:episode']:
-            link = __baseurl__+item[u'_links'][u'self'][u'href']
-            image = makeImageUrl(item[u'image'])
-            name = item[u'name']
-            LIST_EPISODE(name,link,image)
+        listSeasonEpisodes(seasons)
     elif type(seasons) is list:
         for season in seasons:
-            try:
-                for episode in season[u'_embedded'][u'stream:episode']:
-                    link = __baseurl__+episode[u'_links'][u'self'][u'href']
-                    image = makeImageUrl(episode[u'image'])
-                    name = season[u'name'] +' | '+ episode[u'name']
-                    LIST_EPISODE(name,link,image)
-            except:
-                continue
-    try:
+            link = __baseurl__+season[u'_links'][u'self'][u'href']
+            name = u'[B][COLOR blue]' + season[u'name'] + u' >>[/COLOR][/B]'
+            addDir(name,link,MODE_LIST_EPISODES,nexticon)
+        for season in seasons:
+            listSeasonEpisodes(season, season[u'name'])
+    if (u'_links' in data) and (u'next' in data[u'_links']):
         link = __baseurl__+data[u'_links'][u'next'][u'href']
         addDir(u'[B][COLOR blue]'+getLS(30004)+u' >>[/COLOR][/B]',link,MODE_LIST_SEASON,nexticon)
-    except:
-        logDbg('Další epizody nenalezeny')
 
-def LIST_EPISODES(url):
-    data = getJsonDataFromUrl(url)
-    islatest='/timeline/latest' in url
-    for item in data[u'_embedded'][u'stream:episode']:
-        link = __baseurl__+item[u'_links'][u'self'][u'href']
-        image = makeImageUrl(item[u'image'])
-        name = item[u'_embedded'][u'stream:show'][u'name'] + ' | ' + item[u'name']
-        LIST_EPISODE(name,link,image,islatest)
-    try:
-        link = __baseurl__+data[u'_links'][u'next'][u'href']
-        addDir(u'[B][COLOR blue]'+getLS(30004)+u' >>[/COLOR][/B]',link,MODE_LIST_EPISODES,nexticon)
-    except:
-        logDbg('Další epizody nenalezeny')
-
-def LIST_EPISODE(name, link, image, islatest=False):
+def addEpisode(item, season_name='', islatest=False):
+    link = __baseurl__+item[u'_links'][u'self'][u'href']
+    image = makeImageUrl(item[u'image'])
+    name = item[u'name']
+    if u'order' in item:
+        name = str(item[u'order']) +'. '+ name
+    if (len(season_name)==0) and ((u'_embedded' in item) and (u'stream:show' in item[u'_embedded'])) :
+        season_name = item[u'_embedded'][u'stream:show'][u'name']
+    if len(season_name):
+        name = season_name + ' | ' + name
     if quality_index == 0:
         addDir(name,link,MODE_VIDEOLINK,image)
     else:
         addUnresolvedLink(name,link,image,islatest)
 
-def LIST_NEXT_EPISODES(url):
+def listSeasonEpisodes(data, season_name='', islatest=False):
+    if (u'_embedded' in data) and (u'stream:episode' in data[u'_embedded']):
+        episodes=data[u'_embedded'][u'stream:episode']
+        if type(episodes) is dict:
+            addEpisode(episodes, season_name, islatest)
+        elif type(episodes) is list:
+            for item in episodes:
+                addEpisode(item, season_name, islatest)
+    if (u'_links' in data) and (u'next' in data[u'_links']):
+        link = __baseurl__+data[u'_links'][u'next'][u'href']
+        addDir(u'[B][COLOR blue]'+getLS(30004)+u' >>[/COLOR][/B]',link,MODE_LIST_EPISODES,nexticon)
+
+def listEpisodes(url):
+    data = getJsonDataFromUrl(url)
+    islatest='/timeline/latest' in url
+    listSeasonEpisodes(data, '', islatest)
+    
+def listNextEpisodes(url):
     data = getJsonDataFromUrl(url)
     try:
         link = __baseurl__+data[u'_embedded'][u'stream:show'][u'_links'][u'self'][u'href']
-        LIST_SEASON(link)
+        listSeasons(link)
     except:
         logDbg('Další epizody nenalezeny')
 
-def VIDEOLINK(url,name):
+def videoLink(url,name):
     data = getJsonDataFromUrl(url)
     name = data[u'name']
     thumb = makeImageUrl(data[u'image'])
-    popis = data[u'detail']
+    popis = html2text(data[u'detail'])
     logDbg(url)
     for item in data[u'video_qualities']:
         try:
@@ -211,11 +241,11 @@ def VIDEOLINK(url,name):
     except:
         logDbg('Další epizody nenalezeny')
 
-def RESOLVE_VIDEOLINK(url,name):
+def resolveVideoLink(url,name):
     data = getJsonDataFromUrl(url)
     name = data[u'name']
     thumb = makeImageUrl(data[u'image'])
-    popis = data[u'detail']
+    popis = html2text(data[u'detail'])
     qa = []
     logDbg("Resolving video URL for quality " + quality_settings[quality_index] + " from: " + url)
     for item in data[u'video_qualities']:
@@ -230,7 +260,7 @@ def RESOLVE_VIDEOLINK(url,name):
     if len(qa) == 0:
         # no video available...
         notify(getLS(30003))
-        xbmcplugin.setResolvedUrl(handle=int(sys.argv[1]), succeeded=False, listitem=xbmcgui.ListItem(label="video", path=""))
+        xbmcplugin.setResolvedUrl(handle=addonHandle, succeeded=False, listitem=xbmcgui.ListItem(label="video", path=""))
         return
     # sort available qualities according desired one
     quality_sorted = quality_settings[quality_index:0:-1]
@@ -245,124 +275,127 @@ def RESOLVE_VIDEOLINK(url,name):
     
     if stream_url == "":
         logErr("No video stream found!")
-        xbmcplugin.setResolvedUrl(handle=int(sys.argv[1]), succeeded=False, listitem=xbmcgui.ListItem(label="video", path=""))
+        xbmcplugin.setResolvedUrl(handle=addonHandle, succeeded=False, listitem=xbmcgui.ListItem(label="video", path=""))
         return
 
     logDbg("Resolved URL: "+stream_url)
     if match_quality[0][0] != quality_settings[quality_index]:
-            notify(getLS(30002) % (quality_settings[quality_index], match_quality[0][0]))
+        notify(getLS(30002) % (quality_settings[quality_index], match_quality[0][0]))
     
     liz = xbmcgui.ListItem(path=stream_url, iconImage="DefaultVideo.png")
     liz.setInfo( type="Video", infoLabels={ "Title": name, "Plot": popis} )
     liz.setProperty('IsPlayable', 'true')
     liz.setProperty( "icon", thumb )
-    xbmcplugin.setResolvedUrl(handle=int(sys.argv[1]), succeeded=True, listitem=liz)
+    xbmcplugin.setResolvedUrl(handle=addonHandle, succeeded=True, listitem=liz)
 
-def get_params():
-        param=[]
-        paramstring=sys.argv[2]
-        if len(paramstring)>=2:
-                params=sys.argv[2]
-                cleanedparams=params.replace('?','')
-                if (params[len(params)-1]=='/'):
-                        params=params[0:len(params)-2]
-                pairsofparams=cleanedparams.split('&')
-                param={}
-                for i in range(len(pairsofparams)):
-                        splitparams={}
-                        splitparams=pairsofparams[i].split('=')
-                        if (len(splitparams))==2:
-                                param[splitparams[0]]=splitparams[1]
-        return param
+def getParams():
+    param=[]
+    paramstring=sys.argv[2]
+    if len(paramstring)>=2:
+        params=sys.argv[2]
+        cleanedparams=params.replace('?','')
+        if (params[len(params)-1]=='/'):
+            params=params[0:len(params)-2]
+        pairsofparams=cleanedparams.split('&')
+        param={}
+        for i in range(len(pairsofparams)):
+            splitparams={}
+            splitparams=pairsofparams[i].split('=')
+            if (len(splitparams))==2:
+                param[splitparams[0]]=splitparams[1]
+    return param
 
 def addLink(name,url,iconimage,popis):
-        logDbg("addLink(): '"+name+"' url='"+url+ "' img='"+iconimage+"' popis='"+popis+"'")
-        ok=True
-        liz=xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
-        liz.setInfo( type="Video", infoLabels={ "Title": name, "Plot": popis} )
-        liz.setProperty( "Fanart_Image", fanart )
-        ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=liz)
-        return ok
+    logDbg("addLink(): '"+name+"' url='"+url+ "' img='"+iconimage+"' popis='"+popis+"'")
+    ok=True
+    liz=xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
+    liz.setInfo( type="Video", infoLabels={ "Title": name, "Plot": popis} )
+    liz.setProperty( "Fanart_Image", fanart )
+    ok=xbmcplugin.addDirectoryItem(handle=addonHandle,url=url,listitem=liz)
+    return ok
 
 def composePluginUrl(url, mode, name):
     return sys.argv[0]+"?url="+urllib.quote_plus(url.encode('utf-8'))+"&mode="+str(mode)+"&name="+urllib.quote_plus(name.encode('utf-8'))
 
 def addItem(name,url,mode,iconimage,isfolder,islatest=False):
-        u=composePluginUrl(url,mode,name)
-        ok=True
-        liz=xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=iconimage)
-        liz.setInfo( type="Video", infoLabels={ "Title": name } )
-        liz.setProperty( "Fanart_Image", fanart )
-        if not isfolder:
-                liz.setProperty("IsPlayable", "true")
-                if islatest:
-                    next_url = composePluginUrl(url,MODE_LIST_NEXT_EPISODES,name)
-                    menuitems = []
-                    menuitems.append(( getLS(30004).encode('utf-8'), 'XBMC.Container.Update('+next_url+')' ))
-                    liz.addContextMenuItems(menuitems)
-        ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=isfolder)
-        return ok
+    u=composePluginUrl(url,mode,name)
+    ok=True
+    liz=xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=iconimage)
+    liz.setInfo( type="Video", infoLabels={ "Title": name } )
+    liz.setProperty( "Fanart_Image", fanart )
+    if not isfolder:
+        liz.setProperty("IsPlayable", "true")
+        menuitems = []
+        if islatest:
+            next_url = composePluginUrl(url,MODE_LIST_NEXT_EPISODES,name)
+            menuitems.append(( getLS(30004).encode('utf-8'), 'XBMC.Container.Update('+next_url+')' ))
+        if quality_index != 0:
+            select_quality_url = composePluginUrl(url,MODE_VIDEOLINK,name)
+            menuitems.append(( getLS(30005).encode('utf-8'), 'XBMC.Container.Update('+select_quality_url+')' ))
+        liz.addContextMenuItems(menuitems)
+    ok=xbmcplugin.addDirectoryItem(handle=addonHandle,url=u,listitem=liz,isFolder=isfolder)
+    return ok
 
 def addDir(name,url,mode,iconimage):
-        logDbg("addDir(): '"+name+"' url='"+url+"' icon='"+iconimage+"' mode='"+str(mode)+"'")
-        return addItem(name,url,mode,iconimage,True)
+    logDbg("addDir(): '"+name+"' url='"+url+"' icon='"+iconimage+"' mode='"+str(mode)+"'")
+    return addItem(name,url,mode,iconimage,True)
 
 def addUnresolvedLink(name,url,iconimage,islatest=False):
-        mode=MODE_RESOLVE_VIDEOLINK
-        logDbg("addUnresolvedLink(): '"+name+"' url='"+url+"' icon='"+iconimage+"' mode='"+str(mode)+"'")
-        return addItem(name,url,mode,iconimage,False,islatest)
-    
-params=get_params()
+    mode=MODE_RESOLVE_VIDEOLINK
+    logDbg("addUnresolvedLink(): '"+name+"' url='"+url+"' icon='"+iconimage+"' mode='"+str(mode)+"'")
+    return addItem(name,url,mode,iconimage,False,islatest)
+
+addonHandle=int(sys.argv[1])
+params=getParams()
 url=None
 name=None
 thumb=None
 mode=None
 
 try:
-        url=urllib.unquote_plus(params["url"])
+    url=urllib.unquote_plus(params["url"])
 except:
-        pass
+    pass
 try:
-        name=urllib.unquote_plus(params["name"])
+    name=urllib.unquote_plus(params["name"])
 except:
-        pass
+    pass
 try:
-        mode=int(params["mode"])
+    mode=int(params["mode"])
 except:
-        pass
+    pass
 
 logDbg("Mode: "+str(mode))
 logDbg("URL: "+str(url))
 logDbg("Name: "+str(name))
 
-
 if mode==None or url==None or len(url)<1:
-        STATS("OBSAH", "Function")
-        OBSAH()
-       
+    STATS("OBSAH", "Function")
+    listContent()
+   
 elif mode==MODE_LIST_SHOWS:
-        STATS("LIST_SHOWS", "Function")
-        LIST_SHOWS(url)
+    STATS("LIST_SHOWS", "Function")
+    listShows(url)
 
 elif mode==MODE_LIST_SEASON:
-        STATS("LIST_SEASON", "Function")
-        LIST_SEASON(url)
+    STATS("LIST_SEASON", "Function")
+    listSeasons(url)
 
 elif mode==MODE_LIST_EPISODES:
-        STATS("LIST_EPISODES", "Function")
-        LIST_EPISODES(url)
+    STATS("LIST_EPISODES", "Function")
+    listEpisodes(url)
 
 elif mode==MODE_VIDEOLINK:
-        STATS(name, "Item")
-        VIDEOLINK(url,name)
+    STATS(name, "Item")
+    videoLink(url,name)
 
 elif mode==MODE_RESOLVE_VIDEOLINK:
-        RESOLVE_VIDEOLINK(url,name)
-        STATS(name, "Item")
-        sys.exit(0)
+    resolveVideoLink(url,name)
+    STATS(name, "Item")
+    sys.exit(0)
 
 elif mode==MODE_LIST_NEXT_EPISODES:
-        STATS("LIST_NEXT_EPISODES", "Function")
-        LIST_NEXT_EPISODES(url)
-        
-xbmcplugin.endOfDirectory(int(sys.argv[1]))
+    STATS("LIST_NEXT_EPISODES", "Function")
+    listNextEpisodes(url)
+    
+xbmcplugin.endOfDirectory(addonHandle)

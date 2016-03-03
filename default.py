@@ -224,13 +224,16 @@ def videoLink(url,name):
     thumb = makeImageUrl(data[u'image'])
     popis = html2text(data[u'detail'])
     logDbg(url)
+    subtitles = ''
+    if 'subtitles_srt' in data:
+        subtitles = 'http:'+data['subtitles_srt']
     for item in data[u'video_qualities']:
         try:
             for fmt in item[u'formats']:
                 if fmt[u'type'] == 'video/mp4':
                     stream_url = fmt[u'source']
                     quality = fmt[u'quality']
-                    addLink(quality+' '+name,stream_url,thumb,popis)
+                    addLink(quality+' '+name,stream_url,thumb,popis,subtitles)
         except:
             continue
     try:
@@ -286,6 +289,9 @@ def resolveVideoLink(url,name):
     liz.setInfo( type="Video", infoLabels={ "Title": name, "Plot": popis} )
     liz.setProperty('IsPlayable', 'true')
     liz.setProperty( "icon", thumb )
+    if 'subtitles_srt' in data:
+        logDbg("Subtitles URL: "+data['subtitles_srt'])
+        liz.setSubtitles([ 'http:'+data['subtitles_srt'] ])
     xbmcplugin.setResolvedUrl(handle=addonHandle, succeeded=True, listitem=liz)
 
 def getParams():
@@ -305,12 +311,14 @@ def getParams():
                 param[splitparams[0]]=splitparams[1]
     return param
 
-def addLink(name,url,iconimage,popis):
-    logDbg("addLink(): '"+name+"' url='"+url+ "' img='"+iconimage+"' popis='"+popis+"'")
+def addLink(name,url,iconimage,popis,subtitles):
+    logDbg("addLink(): '"+name+"' url='"+url+ "' img='"+iconimage+"' popis='"+popis+"' subtitles='"+subtitles+"'")
     ok=True
     liz=xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
     liz.setInfo( type="Video", infoLabels={ "Title": name, "Plot": popis} )
     liz.setProperty( "Fanart_Image", fanart )
+    if len(subtitles):
+        liz.setSubtitles([ subtitles ])
     ok=xbmcplugin.addDirectoryItem(handle=addonHandle,url=url,listitem=liz)
     return ok
 

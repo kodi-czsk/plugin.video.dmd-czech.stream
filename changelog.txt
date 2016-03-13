@@ -1,3 +1,5 @@
+2016-03-13 [1.2.5]
+  * Oprava - sekce Pohadky nelze otevrit pokud API vrati pouze jeden porad.
 2016-01-30 [1.2.4]
   * V popise videa sa odstrania/nahradia HTML znacky za formatovacie znacky podporovane v Kodi.
   * Doplnena moznost vyberu inej kvality videa z kontextoveho menu.

@@ -149,6 +149,9 @@ def listContent():
 
 def listShows(url):
     data = getJsonDataFromUrl(url)
+    if type(data[u'_embedded'][u'stream:show']) is dict:
+        data[u'_embedded'][u'stream:show'] = [data[u'_embedded'][u'stream:show']]
+
     for item in data[u'_embedded'][u'stream:show']:
         if u'stream:backward' in item[u'_links']:
             link = __baseurl__+item[u'_links'][u'stream:backward'][u'href']

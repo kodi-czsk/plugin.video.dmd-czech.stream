@@ -143,9 +143,9 @@ def html2text(html):
     return text
 
 def listContent():
-    addDir(u'Nejnovější videa',__baseurl__ + '/timeline/latest',MODE_LIST_EPISODES,icon)
-    addDir(u'Všechny pořady',__baseurl__ + '/catalogue',MODE_LIST_SHOWS,icon)
-    addDir(u'Pohádky',__baseurl__ + '/catalogue?channels=3',MODE_LIST_SHOWS,icon)
+    addDir(getLS(30006),__baseurl__ + '/timeline/latest',MODE_LIST_EPISODES,icon)
+    addDir(getLS(30007),__baseurl__ + '/catalogue',MODE_LIST_SHOWS,icon)
+    addDir(getLS(30008),__baseurl__ + '/catalogue?channels=3',MODE_LIST_SHOWS,icon)
 
 def listShows(url):
     data = getJsonDataFromUrl(url)

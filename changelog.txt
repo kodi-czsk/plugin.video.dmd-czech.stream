@@ -1,3 +1,6 @@
+2016-12-26 [1.2.6]
+  * Oprava - doplnok sa nespusti ak cesta k nemu obsahuje diakritiku (windows)
+  * Pridane preklady nazvov kategorii (najnovsie videa/relacie/rozpravky)   
 2016-03-13 [1.2.5]
   * Oprava - sekce Pohadky nelze otevrit pokud API vrati pouze jeden porad.
 2016-01-30 [1.2.4]

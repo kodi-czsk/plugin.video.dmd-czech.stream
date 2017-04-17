@@ -1,3 +1,5 @@
+2017-04-17 [1.2.7]
+  * Aktualizacia ikony
 2016-12-26 [1.2.6]
   * Oprava - doplnok sa nespusti ak cesta k nemu obsahuje diakritiku (windows)
   * Pridane preklady nazvov kategorii (najnovsie videa/relacie/rozpravky)   
